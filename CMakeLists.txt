@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
+SET(CMAKE_SKIP_RPATH, true)
+
 project(undiet LANGUAGES C)
 add_library(libundiet SHARED
     undiet.c
