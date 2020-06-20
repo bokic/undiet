@@ -17,23 +17,23 @@ static void undiet_next(uint8_t *src, uint16_t *ax, uint16_t *bp, uint8_t *dl, u
 {
     uint16_t tmp = 0;
 
-   *dl *= 2; if (*cf) *dl |= 0x01;                                        // rcl     dl, 1
+   *dl *= 2; if (*cf) *dl |= 0x01;
 
-    if (*src_offset >= 0x2006) {                                          // cmp     $0x2006, %r11
-        *src_offset -= 0x2000;                                            // sub     $0x2000, %r11 # old_si
-        *src_seg    += 0x2000;                                            // add     $0x2000, %r14 # old_ds
+    if (*src_offset >= 0x2006) {
+        *src_offset -= 0x2000;
+        *src_seg    += 0x2000;
     }
 
-    if (*dst_offset >= 0xc000) {                                          // cmp     $0xc000, %r12 # old_di
-        *dst_offset -= 0x8000;                                            // sub     $0x8000, %r12 # old_di
-        *dst_seg    += 0x8000;                                            // add     $0x8000, %r13 # old_es
+    if (*dst_offset >= 0xc000) {
+        *dst_offset -= 0x8000;
+        *dst_seg    += 0x8000;
     }
 
-    *ax =  *(uint16_t *)(src + *src_seg + *src_offset); *src_offset += 2; // lodsw
+    *ax =  *(uint16_t *)(src + *src_seg + *src_offset); *src_offset += 2;
 
-    tmp = *ax; *ax = *bp; *bp = tmp;                                      // xchg    ax, bp
-    *cf = *dl & 0x01; *dl = *dl / 2;                                      // shr     $1, %dl
-    *dl = 0x10;                                                           // mov     dl, 10h
+    tmp = *ax; *ax = *bp; *bp = tmp;
+    *cf = *dl & 0x01; *dl = *dl / 2;
+    *dl = 0x10;
 }
 
 int32_t undiet_unpack(uint8_t *src, uint8_t *dst)
@@ -55,211 +55,188 @@ int32_t undiet_unpack(uint8_t *src, uint8_t *dst)
 
     src += 0x11; // skip diet header
 
-    // loc_115C5
-    d.l = 0x10;                                                                                               // mov     dl, 10h
-    a.x = *(uint16_t *)(src + src_offset); src_offset += 2;                                                   // lodsw
-    tmp = a.x; a.x = bp; bp = tmp;                                                                            // xchg    ax, bp
-    c.x = 0;                                                                                                  // xor     cx, cx
+    d.l = 0x10;
+    a.x = *(uint16_t *)(src + src_offset); src_offset += 2;
+    tmp = a.x; a.x = bp; bp = tmp;
+    c.x = 0;
 
     while(1) {
-        while(1) { // ok
-            // loc_115DC
-            cf = bp & 0x01; bp = bp / 2;                                                                      // shr     bp, 1
-            d.l--;                                                                                            // dec     dl ; (do not touch CF)
-            if (d.l == 0) {                                                                                   // jz      short loc_115CD
-                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);         // call    sub_1368
-                                                                                                              // jmp     short loc_1459
+        while(1) {
+            cf = bp & 0x01; bp = bp / 2;
+            d.l--;
+            if (d.l == 0) {
+                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+
             }
 
-            // loc_115E2
-            if (cf == 0) break;                                                                               // jnb     short loc_115E7 or CF == 0
+            if (cf == 0) break;
 
-            dst[dst_seg + dst_offset] = src[src_offset + src_seg]; dst_offset++; src_offset++;                // movsb
+            dst[dst_seg + dst_offset] = src[src_offset + src_seg]; dst_offset++; src_offset++;
         }
 
-        // loc_115E7
-        cf = bp & 0x01; bp = bp / 2;                                                                          // shr     bp, 1
-        d.l--;                                                                                                // dec     dl ; (do not touch CF)
-        if (d.l == 0) {                                                                                       // jz      short loc_115D2
-            undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);             // call    sub_1368
+        cf = bp & 0x01; bp = bp / 2;
+        d.l--;
+        if (d.l == 0) {
+            undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
         }
 
-        // loc_115ED:
-        a.l = src[src_offset + src_seg]; src_offset++;                                                        // lodsb
-        a.h = 0xff;                                                                                           // mov     ah, 0FFh
-        tmp = a.x; a.x = b.x; b.x = tmp;                                                                      // xchg    ax, bx
+        a.l = src[src_offset + src_seg]; src_offset++;
+        a.h = 0xff;
+        tmp = a.x; a.x = b.x; b.x = tmp;
 
-        // loc_115F1
-        if (cf == 0) { // left branch                                                                         // jb      loc_1163A
+        if (cf == 0) {
 
-            // loc_115F3
-            cf = bp & 0x01; bp = bp / 2;                                                                      // shr     bp, 1
-            d.l--;                                                                                            // dec     dl ; (do not touch CF)
+            cf = bp & 0x01; bp = bp / 2;
+            d.l--;
 
-            // loc_115F7
-            if (d.l == 0) {                                                                                   // jz      short loc_115D7
-                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);         // call    sub_1368
+            if (d.l == 0) {
+                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
             }
 
-            // loc_115F9
-            if (cf == 0) {                                                                                    // jb      short loc_11609
-                if (b.l == b.h) {                                                                             // cmp     bl, bh
+            if (cf == 0) {
+                if (b.l == b.h) {
                     return dst_seg + dst_offset;
                 }
             } else {
-                c.l = 3;                                                                                      // mov     cl, 3
+                c.l = 3;
 
-                // loc_1160B
                 do {
-                    cf = bp & 0x01; bp = bp / 2;                                                              // shr     bp, 1
-                    d.l--;                                                                                    // dec     dl ; (do not touch CF)
+                    cf = bp & 0x01; bp = bp / 2;
+                    d.l--;
 
-                    if (d.l == 0) {                                                                           // jz      short loc_115D7
-                        undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf); // call    sub_1368
+                    if (d.l == 0) {
+                        undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
                     }
 
-                    b.h *= 2; if (cf) b.h |= 0x01; cf = b.h & 0x80;                                           // rcl     bh, 1
-                } while (--c.x > 0);                                                                          // loop    loc_1160B
+                    b.h *= 2; if (cf) b.h |= 0x01; cf = b.h & 0x80;
+                } while (--c.x > 0);
 
-                b.h--;                                                                                        // dec     bh
+                b.h--;
             }
 
-            // loc_115FF
-            c.l = 2;                                                                                          // mov     cl, 2
+            c.l = 2;
 
-        } else { // right branch
-            // loc_1163A:
-            cf = bp & 0x01; bp = bp / 2;                                                                      // shr     bp, 1
-            d.l--;                                                                                            // dec     dl ; (do not touch CF)
+        } else {
+            cf = bp & 0x01; bp = bp / 2;
+            d.l--;
 
-            if (d.l == 0) {                                                                                   // jz      short loc_1161C
-                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);         // call    sub_1368
+            if (d.l == 0) {
+                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
             }
 
-            // loc_11640:
-            b.h *= 2; if (cf) b.h |= 0x01; cf = b.h & 0x80;                                                   // rcl     bh, 1
-            cf = bp & 0x01; bp = bp / 2;                                                                      // shr     bp, 1
-            d.l--;                                                                                            // dec     dl ; (do not touch CF)
+            b.h *= 2; if (cf) b.h |= 0x01; cf = b.h & 0x80;
+            cf = bp & 0x01; bp = bp / 2;
+            d.l--;
 
-            if (d.l == 0) {                                                                                   // jz      short loc_150C
-                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);         // call    sub_1368
+            if (d.l == 0) {
+                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
             }
 
-            // loc_11648
-            if (cf == 0) {                                                                                    // jb      short loc_1564
-                d.h = 2;                                                                                      // mov     dh, 2
-                c.l = 3;                                                                                      // mov     cl, 3
+            if (cf == 0) {
+                d.h = 2;
+                c.l = 3;
 
-                do {                                                                                          // loc_154C:
-                    cf = bp & 0x01; bp = bp / 2;                                                              // shr     bp, 1
-                    d.l--;                                                                                    // dec     dl ; (do not touch CF)
-                    if (d.l == 0) {                                                                           // jz      short loc_151A
-                        undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf); // call    sub_1368
+                do {
+                    cf = bp & 0x01; bp = bp / 2;
+                    d.l--;
+                    if (d.l == 0) {
+                        undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
                     }
 
-                    if (cf != 0) break;                                                                       // jb      short loc_1562
+                    if (cf != 0) break;
 
-                    cf = bp & 0x01; bp = bp / 2;                                                              // shr     bp, 1
-                    d.l--;                                                                                    // dec     dl ; (do not touch CF)
+                    cf = bp & 0x01; bp = bp / 2;
+                    d.l--;
 
-                    if (d.l == 0) {                                                                           // jz      short loc_151A
-                        undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf); // call    sub_1368
+                    if (d.l == 0) {
+                        undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
                     }
 
-                    b.h *= 2; if (cf) b.h |= 0x01; cf = b.h & 0x80;                                           // rcl     bh, 1
-                    d.h *= 2;                                                                                 // add     dh, dh
+                    b.h *= 2; if (cf) b.h |= 0x01; cf = b.h & 0x80;
+                    d.h *= 2;
 
-                } while (--c.x > 0);                                                                          // loop    loc_154C
+                } while (--c.x > 0);
 
-                // loc_1562:
-                b.h -= d.h;                                                                                   // sub     bh, dh
+                b.h -= d.h;
             }
 
-            // loc_1564:
-            d.h = 2;                                                                                          // mov     dh, 2
-            c.l = 4;                                                                                          // mov     cl, 4
+            d.h = 2;
+            c.l = 4;
 
             do {
-                d.h++;                                                                                        // inc     dh
-                cf = bp & 0x01; bp = bp / 2;                                                                  // shr     bp, 1
-                d.l--;                                                                                        // dec     dl
+                d.h++;
+                cf = bp & 0x01; bp = bp / 2;
+                d.l--;
 
-                if (d.l == 0) {                                                                               // jz      short loc_151A
-                    undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);     // call    sub_1368
+                if (d.l == 0) {
+                    undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
                 }
 
-                // loc_1571:
-                if (cf != 0) {                                                                                // jb      short loc_158A
-                    c.l = d.h;                                                                                // mov     cl, dh
+                if (cf != 0) {
+                    c.l = d.h;
                     goto loc_11601;
                 }
 
-            } while (--c.x > 0);                                                                              // loop    loc_1568
+            } while (--c.x > 0);
 
-            cf = bp & 0x01; bp = bp / 2;                                                                      // shr     bp, 1
-            d.l--;                                                                                            // dec     dl
+            cf = bp & 0x01; bp = bp / 2;
+            d.l--;
 
-            if (d.l == 0) {                                                                                   // jz      short loc_15DF
-                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);         // call    sub_1368
-            }
-
-            // loc_1167A
-            if (cf != 0) {                                                                                    // jb      short loc_116A7
-                d.h++;                                                                                        // inc     dh
-                cf = bp & 0x01; bp = bp / 2;                                                                  // shr     bp, 1
-                d.l--;                                                                                        // dec     dl
-
-                if (d.l == 0) {                                                                               // jz      short loc_151A
-                    undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);     // call    sub_1368
-                }
-
-                // loc_11684
-                if (cf) d.h++;                                                                                // adc     dh, 0
-                c.l = d.h;                                                                                    // mov     cl, dh
-
-                goto loc_11601;                                                                               // jmp     loc_14C0
-            }
-
-            // loc_1168C
-            cf = bp & 0x01; bp = bp / 2;                                                                      // shr     bp, 1
-            d.l--;                                                                                            // dec     dl
-
-            if (d.l == 0) {                                                                                   // jz      short loc_151A
-                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);         // call    sub_1368
+            if (d.l == 0) {
+                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
             }
 
             if (cf != 0) {
-                // loc_116A7
-                a.l = src[src_offset + src_seg]; src_offset++;                                                // lodsb
-                c.l = a.l;                                                                                    // mov     cl, al
-                c.x += 0x11;                                                                                  // add     cx, 11h
+                d.h++;
+                cf = bp & 0x01; bp = bp / 2;
+                d.l--;
+
+                if (d.l == 0) {
+                    undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                }
+
+                if (cf) d.h++;
+                c.l = d.h;
+
                 goto loc_11601;
             }
 
-            c.l = 3;                                                                                          // mov     cl, 3
-            d.h = 0;                                                                                          // mov     dh, 0
+            cf = bp & 0x01; bp = bp / 2;
+            d.l--;
 
-            // loc_11698
+            if (d.l == 0) {
+                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+            }
+
+            if (cf != 0) {
+                a.l = src[src_offset + src_seg]; src_offset++;
+                c.l = a.l;
+                c.x += 0x11;
+                goto loc_11601;
+            }
+
+            c.l = 3;
+            d.h = 0;
+
             do {
-                cf = bp & 0x01; bp = bp / 2;                                                                  // shr     bp, 1
-                d.l--;                                                                                        // dec     dl
+                cf = bp & 0x01; bp = bp / 2;
+                d.l--;
 
-                if (d.l == 0) {                                                                               // jz      short loc_151A
-                    undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);     // call    sub_1368
+                if (d.l == 0) {
+                    undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
                 }
 
-                // loc_1169E
-                d.h *= 2; if (cf) d.h |= 0x01;                                                                // rcl     dh, 1
-            } while (--c.x > 0);                                                                              // loop    loc_11698
+                d.h *= 2; if (cf) d.h |= 0x01;
+            } while (--c.x > 0);
 
-            d.h += 9;                                                                                         // add     dh, 9
-            c.l = d.h;                                                                                        // mov     cl, dh
+            d.h += 9;
+            c.l = d.h;
         }
 
 loc_11601:
         do {
-            a.l = dst[dst_seg + ((b.x + dst_offset) & 0xffff)];                                               // mov  al,es:[bx+di]
-            dst[dst_seg + dst_offset] = a.l; dst_offset = (dst_offset + 1) & 0xffff;                          // stosb
+            a.l = dst[dst_seg + ((b.x + dst_offset) & 0xffff)];
+            dst[dst_seg + dst_offset] = a.l; dst_offset = (dst_offset + 1) & 0xffff;
         } while(--c.x > 0);
     }
 }
