@@ -15,3 +15,9 @@ add_executable(undiet
     undiet.h
 )
 target_link_libraries(undiet libundiet)
+
+set(CMAKE_INSTALL_PREFIX /usr)
+install(TARGETS
+    libundiet
+    undiet
+)
