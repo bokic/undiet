@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <errno.h>
 
 
 #define MAX_OUTPUT_FILESIZE 0x400000
@@ -33,13 +32,13 @@ int main(int argc, char *argv[])
 
     fd_in = open(argv[1], O_RDONLY);
     if (fd_in == -1) {
-        fprintf(stderr, "Error opening input file %s. Error: %s\n", argv[1], strerror(errno));
+        fprintf(stderr, "Error opening input file %s. Error: %m\n", argv[1]);
         ret = EXIT_FAILURE;
         goto exit;
     }
 
     if (fstat(fd_in, &st) == -1) {
-        fprintf(stderr, "Failed to call stat for input file %s. Error: %s\n", argv[1], strerror(errno));
+        fprintf(stderr, "Failed to call stat for input file %s. Error: %m\n", argv[1]);
         ret = EXIT_FAILURE;
         goto exit;
     }
@@ -52,21 +51,21 @@ int main(int argc, char *argv[])
 
     in = malloc(st.st_size);
     if (in == NULL) {
-        fprintf(stderr, "Malloc for input buffer failed. Error: %s\n", strerror(errno));
+        fprintf(stderr, "Malloc for input buffer failed. Error: %m\n");
         ret = EXIT_FAILURE;
         goto exit;
     }
 
     cnt = read(fd_in, in, st.st_size);
     if (cnt != st.st_size) {
-        fprintf(stderr, "Error reading from input file %s. Error: %s\n", argv[1], strerror(errno));
+        fprintf(stderr, "Error reading from input file %s. Error: %m\n", argv[1]);
         ret = EXIT_FAILURE;
         goto exit;
     }
 
     out = malloc(MAX_OUTPUT_FILESIZE);
     if (out == NULL) {
-        fprintf(stderr, "Malloc for output buffer failed. Error: %s\n", strerror(errno));
+        fprintf(stderr, "Malloc for output buffer failed. Error: %m\n");
         ret = EXIT_FAILURE;
         goto exit;
     }
@@ -87,14 +86,14 @@ int main(int argc, char *argv[])
 
     fd_out = open(argv[2], O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (fd_out == -1) {
-        fprintf(stderr, "Error creating output file %s. Error: %s\n", argv[2], strerror(errno));
+        fprintf(stderr, "Error creating output file %s. Error: %m\n", argv[2]);
         ret = EXIT_FAILURE;
         goto exit;
     }
 
     cnt = write(fd_out, out, out_size);
     if (cnt != out_size) {
-        fprintf(stderr, "Error writing to output %s. Error: %s\n", argv[2], strerror(errno));
+        fprintf(stderr, "Error writing to output %s. Error: %m\n", argv[2]);
         ret = EXIT_FAILURE;
         goto exit;
     }
