@@ -12,7 +12,7 @@ typedef union {
    };
 } reg;
 
-static void undiet_next(uint8_t *src, uint16_t *ax, uint16_t *bp, uint8_t *dl, uint32_t *src_offset, uint32_t *dst_offset, uint32_t *dst_seg, uint32_t *src_seg, bool *cf)
+static void undiet_next(const uint8_t src[], uint16_t *ax, uint16_t *bp, uint8_t *dl, uint32_t *src_offset, uint32_t *dst_offset, uint32_t *dst_seg, uint32_t *src_seg, bool *cf)
 {
     uint16_t tmp = 0;
 
@@ -35,7 +35,7 @@ static void undiet_next(uint8_t *src, uint16_t *ax, uint16_t *bp, uint8_t *dl, u
     *dl = 0x10;
 }
 
-int32_t undiet_unpack(uint8_t *src, uint8_t *dst)
+int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
 {
     reg a = {0};
     reg b = {5};
@@ -240,7 +240,7 @@ loc_11601:
     }
 }
 
-bool undiet_isvalid(uint8_t *src, uint32_t size)
+bool undiet_isvalid(const uint8_t src[], uint32_t size)
 {
     return ((size > 12)&&(size <= 0x40000)&&(src[0] == 0xb4)&&(src[1] == 0x4c)&&(src[4] == 0x9d)&&(src[5] == 0x89)&&(src[6] == 0x64)&&(src[7] == 0x6c));
 }
