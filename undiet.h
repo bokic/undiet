@@ -7,5 +7,6 @@
 
 int32_t undiet_unpack(const uint8_t src[], uint8_t dst[]);
 bool undiet_isvalid(const uint8_t src[], uint32_t size);
+uint32_t undiet_get_uncompressed_size(const uint8_t src[], uint32_t size);
 
 #endif // __UNDIET_H

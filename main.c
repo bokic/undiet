@@ -63,21 +63,28 @@ int main(int argc, char *argv[])
         goto exit;
     }
 
-    out = malloc(MAX_OUTPUT_FILESIZE);
-    if (out == NULL) {
-        fprintf(stderr, "Malloc for output buffer failed. Error: %m\n");
-        ret = EXIT_FAILURE;
-        goto exit;
-    }
-
     if (undiet_isvalid(in, st.st_size) == false) {
         fprintf(stderr, "Input file not compressed with diet.\n");
         ret = EXIT_FAILURE;
         goto exit;
     }
 
-    memset(out, 0x00, MAX_OUTPUT_FILESIZE);
-    int32_t out_size = undiet_unpack(in, out);
+    int32_t out_size = undiet_get_uncompressed_size(in, st.st_size);
+    if ((out_size == 0)||(out_size > MAX_OUTPUT_FILESIZE)) {
+        fprintf(stderr, "Unpacking failed(Illegal output size)!\n");
+        ret = EXIT_FAILURE;
+        goto exit;
+    }
+
+    out = malloc(out_size);
+    if (out == NULL) {
+        fprintf(stderr, "Malloc for output buffer failed. Error: %m\n");
+        ret = EXIT_FAILURE;
+        goto exit;
+    }
+
+    memset(out, 0x00, out_size);
+    out_size = undiet_unpack(in, out);
     if (out_size < 0) {
         fprintf(stderr, "Unpacking failed!\n");
         ret = EXIT_FAILURE;

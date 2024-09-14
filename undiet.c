@@ -242,5 +242,13 @@ loc_11601:
 
 bool undiet_isvalid(const uint8_t src[], uint32_t size)
 {
-    return ((size > 12)&&(size <= 0x40000)&&(src[0] == 0xb4)&&(src[1] == 0x4c)&&(src[4] == 0x9d)&&(src[5] == 0x89)&&(src[6] == 0x64)&&(src[7] == 0x6c));
+    return ((size > 16)&&(size <= 0x40000)&&(src[0] == 0xb4)&&(src[1] == 0x4c)&&(src[4] == 0x9d)&&(src[5] == 0x89)&&(src[6] == 0x64)&&(src[7] == 0x6c));
+}
+
+uint32_t undiet_get_uncompressed_size(const uint8_t src[], uint32_t size)
+{
+    if (size <= 16)
+        return 0;
+
+    return ((((uint32_t)src[14] >> 2) & 0x3f) << 16) | ((uint32_t)src[16] << 8) | src[15];
 }
