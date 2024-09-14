@@ -52,7 +52,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
 
     uint16_t tmp = 0;
 
-    src += 0x11; // skip diet header
+    src += UNDIET_HEADER_SIZE;
 
     d.l = 0x10;
     a.x = *(uint16_t *)(src + src_offset); src_offset += 2;
@@ -65,7 +65,6 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
             d.l--;
             if (d.l == 0) {
                 undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
-
             }
 
             if (cf == 0) break;
@@ -242,13 +241,85 @@ loc_11601:
 
 bool undiet_isvalid(const uint8_t src[], uint32_t size)
 {
-    return ((size > 16)&&(size <= 0x40000)&&(src[0] == 0xb4)&&(src[1] == 0x4c)&&(src[4] == 0x9d)&&(src[5] == 0x89)&&(src[6] == 0x64)&&(src[7] == 0x6c));
+    return ((size > 16)&&(size <= UNDIET_MAX_PACKED_FILESIZE)&&(src[0] == 0xb4)&&(src[1] == 0x4c)&&(src[4] == 0x9d)&&(src[5] == 0x89)&&(src[6] == 0x64)&&(src[7] == 0x6c));
 }
 
 uint32_t undiet_get_uncompressed_size(const uint8_t src[], uint32_t size)
 {
-    if (size <= 16)
+    if(!src)
+        return 0;
+
+    if (size <= UNDIET_HEADER_SIZE)
         return 0;
 
     return ((((uint32_t)src[14] >> 2) & 0x3f) << 16) | ((uint32_t)src[16] << 8) | src[15];
+}
+
+uint32_t undiet_get_compressed_size(const uint8_t src[], uint32_t size)
+{
+    if(!src)
+        return 0;
+
+    if (size <= UNDIET_HEADER_SIZE)
+        return 0;
+
+    return ((((uint32_t)src[9] >> 2) & 0x0f) << 16) | ((uint32_t)src[11] << 8) | src[10];
+}
+
+uint16_t undiet_calc_crc16(const uint8_t src[], uint32_t size)
+{
+    const uint16_t CRC16 = 0x8005;
+
+    uint16_t out = 0;
+    int bits_read = 0, bit_flag;
+
+    if(!src)
+        return 0;
+
+    if ((size < UNDIET_HEADER_SIZE)||(size > UNDIET_MAX_PACKED_FILESIZE))
+        return 0;
+
+    src += UNDIET_HEADER_SIZE;
+    size -= UNDIET_HEADER_SIZE;
+
+    while(size > 0)
+    {
+        bit_flag = out >> 15;
+
+        /* Get next bit: */
+        out <<= 1;
+        out |= (*src >> bits_read) & 1; // item a) work from the least significant bits
+
+        /* Increment bit counter: */
+        bits_read++;
+        if(bits_read > 7)
+        {
+            bits_read = 0;
+            src++;
+            size--;
+        }
+
+        /* Cycle check: */
+        if(bit_flag)
+            out ^= CRC16;
+    }
+
+    // item b) "push out" the last 16 bits
+    int i;
+    for (i = 0; i < 16; ++i) {
+        bit_flag = out >> 15;
+        out <<= 1;
+        if(bit_flag)
+            out ^= CRC16;
+    }
+
+    // item c) reverse the bits
+    uint16_t crc = 0;
+    i = 0x8000;
+    int j = 0x0001;
+    for (; i != 0; i >>=1, j <<= 1) {
+        if (i & out) crc |= j;
+    }
+
+    return crc;
 }

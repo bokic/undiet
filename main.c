@@ -10,9 +10,6 @@
 #include <stdio.h>
 
 
-#define MAX_OUTPUT_FILESIZE 0x400000
-#define MAX_INPUT_FILESIZE 0x40000
-
 int main(int argc, char *argv[])
 {
     int ret = EXIT_SUCCESS;
@@ -43,8 +40,8 @@ int main(int argc, char *argv[])
         goto exit;
     }
 
-    if (st.st_size > MAX_INPUT_FILESIZE) {
-        fprintf(stderr, "Input file too bit. Should be less than 64kb\n");
+    if (st.st_size > UNDIET_MAX_PACKED_FILESIZE) {
+        fprintf(stderr, "Input file too big. Should be less than 1MB\n");
         ret = EXIT_FAILURE;
         goto exit;
     }
@@ -69,8 +66,17 @@ int main(int argc, char *argv[])
         goto exit;
     }
 
-    int32_t out_size = undiet_get_uncompressed_size(in, st.st_size);
-    if ((out_size == 0)||(out_size > MAX_OUTPUT_FILESIZE)) {
+    uint32_t in_size = undiet_get_compressed_size(in, st.st_size);
+    if (in_size + UNDIET_HEADER_SIZE != st.st_size) {
+        fprintf(stderr, "Wrong file size, or corrupted data.\n");
+        ret = EXIT_FAILURE;
+        goto exit;
+    }
+
+    uint16_t crc16 = undiet_calc_crc16(in, st.st_size);
+
+    uint32_t out_size = undiet_get_uncompressed_size(in, st.st_size);
+    if ((out_size == 0)||(out_size > UNDIET_MAX_UNPACKED_FILESIZE)) {
         fprintf(stderr, "Unpacking failed(Illegal output size)!\n");
         ret = EXIT_FAILURE;
         goto exit;
