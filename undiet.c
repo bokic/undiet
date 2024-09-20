@@ -237,6 +237,8 @@ loc_11601:
             dst[dst_seg + dst_offset] = a.l; dst_offset = (dst_offset + 1) & 0xffff;
         } while(--c.x > 0);
     }
+
+    return dst_seg + dst_offset + 1;
 }
 
 bool undiet_isvalid(const uint8_t src[], uint32_t size)
