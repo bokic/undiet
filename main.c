@@ -95,8 +95,8 @@ int main(int argc, char *argv[])
     }
 
     memset(out, 0x00, out_size);
-    out_size = undiet_unpack(in, out);
-    if (out_size < 0) {
+    int32_t decompressed_size = undiet_unpack(in, out);
+    if (decompressed_size != out_size) {
         fprintf(stderr, "Unpacking failed!\n");
         ret = EXIT_FAILURE;
         goto exit;
