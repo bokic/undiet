@@ -74,6 +74,11 @@ int main(int argc, char *argv[])
     }
 
     uint16_t crc16 = undiet_calc_crc16(in, st.st_size);
+    if (crc16 != undiet_get_crc(in, in_size)) {
+        fprintf(stderr, "CRC missmatch!\n");
+        ret = EXIT_FAILURE;
+        goto exit;
+    }
 
     uint32_t out_size = undiet_get_uncompressed_size(in, st.st_size);
     if ((out_size == 0)||(out_size > UNDIET_MAX_UNPACKED_FILESIZE)) {

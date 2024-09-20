@@ -266,6 +266,17 @@ uint32_t undiet_get_compressed_size(const uint8_t src[], uint32_t size)
     return ((((uint32_t)src[9] >> 2) & 0x0f) << 16) | ((uint32_t)src[11] << 8) | src[10];
 }
 
+uint16_t undiet_get_crc(const uint8_t src[], uint32_t size)
+{
+    if(!src)
+        return 0;
+
+    if (size <= UNDIET_HEADER_SIZE)
+        return 0;
+
+    return ((uint16_t)src[13] << 8) | src[12];
+}
+
 uint16_t undiet_calc_crc16(const uint8_t src[], uint32_t size)
 {
     const uint16_t CRC16 = 0x8005;
