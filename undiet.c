@@ -12,23 +12,19 @@ typedef union {
    };
 } reg;
 
-static void undiet_next(const uint8_t src[], uint16_t *ax, uint16_t *bp, uint8_t *dl, uint32_t *src_offset, uint32_t *dst_offset, uint32_t *dst_seg, uint32_t *src_seg, bool *cf)
+static inline void undiet_next(const uint8_t src[], uint16_t *ax, uint16_t *bp, uint8_t *dl, uint32_t *src_offset, uint32_t *dst_offset, uint32_t *dst_seg, bool *cf)
 {
     uint16_t tmp = 0;
 
    *dl *= 2; if (*cf) *dl |= 0x01;
 
-    if (*src_offset >= 0x2006) {
-        *src_offset -= 0x2000;
-        *src_seg    += 0x2000;
-    }
 
     if (*dst_offset >= 0xc000) {
         *dst_offset -= 0x8000;
         *dst_seg    += 0x8000;
     }
 
-    *ax =  *(uint16_t *)(src + *src_seg + *src_offset); *src_offset += 2;
+    *ax =  *(uint16_t *)(src + *src_offset); *src_offset += 2; // lodsw
 
     tmp = *ax; *ax = *bp; *bp = tmp;
     *cf = *dl & 0x01; *dl = *dl / 2;
@@ -42,7 +38,6 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
     reg c = {0};
     reg d = {0};
 
-    uint32_t src_seg = 0;
     uint32_t src_offset = 0;
     uint32_t dst_seg = 0;
     uint32_t dst_offset = 0;
@@ -64,21 +59,21 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
             cf = bp & 0x01; bp = bp / 2;
             d.l--;
             if (d.l == 0) {
-                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);                   // call    sub_1368
             }
 
             if (cf == 0) break;
 
-            dst[dst_seg + dst_offset] = src[src_offset + src_seg]; dst_offset++; src_offset++;
+            dst[dst_seg + dst_offset] = src[src_offset]; dst_offset++; src_offset++;                          // movsb
         }
 
         cf = bp & 0x01; bp = bp / 2;
         d.l--;
         if (d.l == 0) {
-            undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+            undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);                       // call    sub_1368
         }
 
-        a.l = src[src_offset + src_seg]; src_offset++;
+        a.l = src[src_offset]; src_offset++;                                                                  // lodsb
         a.h = 0xff;
         tmp = a.x; a.x = b.x; b.x = tmp;
 
@@ -88,7 +83,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
             d.l--;
 
             if (d.l == 0) {
-                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);                   // call    sub_1368
             }
 
             if (cf == 0) {
@@ -103,7 +98,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
                     d.l--;
 
                     if (d.l == 0) {
-                        undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                        undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);           // call    sub_1368
                     }
 
                     b.h *= 2; if (cf) b.h |= 0x01; cf = b.h & 0x80;
@@ -119,7 +114,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
             d.l--;
 
             if (d.l == 0) {
-                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);                   // call    sub_1368
             }
 
             b.h *= 2; if (cf) b.h |= 0x01; cf = b.h & 0x80;
@@ -127,7 +122,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
             d.l--;
 
             if (d.l == 0) {
-                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);                   // call    sub_1368
             }
 
             if (cf == 0) {
@@ -138,7 +133,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
                     cf = bp & 0x01; bp = bp / 2;
                     d.l--;
                     if (d.l == 0) {
-                        undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                        undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);           // call    sub_1368
                     }
 
                     if (cf != 0) break;
@@ -147,7 +142,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
                     d.l--;
 
                     if (d.l == 0) {
-                        undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                        undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);           // call    sub_1368
                     }
 
                     b.h *= 2; if (cf) b.h |= 0x01; cf = b.h & 0x80;
@@ -167,7 +162,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
                 d.l--;
 
                 if (d.l == 0) {
-                    undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                    undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);               // call    sub_1368
                 }
 
                 if (cf != 0) {
@@ -181,7 +176,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
             d.l--;
 
             if (d.l == 0) {
-                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);                   // call    sub_1368
             }
 
             if (cf != 0) {
@@ -190,7 +185,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
                 d.l--;
 
                 if (d.l == 0) {
-                    undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                    undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);               // call    sub_1368
                 }
 
                 if (cf) d.h++;
@@ -203,11 +198,11 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
             d.l--;
 
             if (d.l == 0) {
-                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);                   // call    sub_1368
             }
 
             if (cf != 0) {
-                a.l = src[src_offset + src_seg]; src_offset++;
+                a.l = src[src_offset]; src_offset++;                                                          // lodsb
                 c.l = a.l;
                 c.x += 0x11;
                 goto loc_11601;
@@ -221,7 +216,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
                 d.l--;
 
                 if (d.l == 0) {
-                    undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &src_seg, &cf);
+                    undiet_next(src, &a.x, &bp, &d.l, &src_offset, &dst_offset, &dst_seg, &cf);               // call    sub_1368
                 }
 
                 d.h *= 2; if (cf) d.h |= 0x01;
