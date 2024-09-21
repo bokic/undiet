@@ -31,6 +31,13 @@ static inline void undiet_next(const uint8_t src[], uint16_t *ax, uint16_t *bp, 
     *dl = 0x10;
 }
 
+static inline void swap_u16(uint16_t *a, uint16_t *b)
+{
+    uint16_t tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
 int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
 {
     reg a = {0};
@@ -45,13 +52,12 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
     uint16_t bp = 0x0a;
     bool cf = 0;
 
-    uint16_t tmp = 0;
 
     src += UNDIET_HEADER_SIZE;
 
     d.l = 0x10;
     a.x = *(uint16_t *)(src + src_offset); src_offset += 2;
-    tmp = a.x; a.x = bp; bp = tmp;
+    swap_u16(&a.x, &bp);                                                                                      // xchg    ax, bp
     c.x = 0;
 
     while(1) {
@@ -75,7 +81,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
 
         a.l = src[src_offset]; src_offset++;                                                                  // lodsb
         a.h = 0xff;
-        tmp = a.x; a.x = b.x; b.x = tmp;
+        swap_u16(&a.x, &b.x);                                                                                 // xchg    ax, bx
 
         if (cf == 0) {
 
