@@ -235,7 +235,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[])
 loc_11601:
         do {
             a.l = dst[dst_seg + ((b.x + dst_offset) & 0xffff)];
-            dst[dst_seg + dst_offset] = a.l; dst_offset = (dst_offset + 1) & 0xffff;
+            dst[dst_seg + dst_offset] = a.l; dst_offset = dst_offset + 1;                                     // stosb
         } while(--c.x > 0);
     }
 
