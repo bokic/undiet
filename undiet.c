@@ -239,7 +239,7 @@ loc_11601:
         } while(--c.x > 0);
     }
 
-    return dst_seg + dst_offset + 1;
+    return 0;
 }
 
 bool undiet_isvalid(const uint8_t src[], uint32_t size)
