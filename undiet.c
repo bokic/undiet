@@ -165,6 +165,9 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[]) {
 
             // Copy match
             uint32_t match_dist = matchpos + 1;
+            if (match_dist > bs.dst_idx) {
+                return -1;
+            }
             
             if (match_dist >= matchlen) {
                 memcpy(&dst[bs.dst_idx], &dst[bs.dst_idx - match_dist], matchlen);
