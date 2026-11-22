@@ -105,7 +105,7 @@ int32_t undiet_unpack_ex(const uint8_t src[], uint32_t src_size, uint8_t dst[], 
             // Match
             bool x2 = get_bit(&bs);
             if (bs.error || bs.offset >= bs.src_size) return -1;
-            uint8_t v = bs.src[bs.offset++]; // dist_lo (v in deark)
+            uint32_t v = bs.src[bs.offset++]; // dist_lo (v in deark)
             uint32_t matchpos = 0;
             uint32_t matchlen = 0;
 
@@ -115,10 +115,10 @@ int32_t undiet_unpack_ex(const uint8_t src[], uint32_t src_size, uint8_t dst[], 
                     uint32_t a2 = get_bit(&bs) ? 1 : 0;
                     uint32_t a3 = get_bit(&bs) ? 1 : 0;
                     uint32_t a4 = get_bit(&bs) ? 1 : 0;
-                    matchpos = 2303 - (1024 * a2 + 512 * a3 + 256 * a4 + (uint32_t)v);
+                    matchpos = 2303 - (1024 * a2 + 512 * a3 + 256 * a4 + v);
                 } else if (v != 0xff) { // a1 == 0, v != 0xff: "short" two-byte match
                     matchlen = 2;
-                    matchpos = 255 - (uint32_t)v;
+                    matchpos = 255 - v;
                 } else { // v == 0xff: special code
                     bool a2 = get_bit(&bs);
                     if (bs.error) return -1;
@@ -133,21 +133,21 @@ int32_t undiet_unpack_ex(const uint8_t src[], uint32_t src_size, uint8_t dst[], 
                 uint32_t a2 = get_bit(&bs) ? 1 : 0;
 
                 if (a2) {
-                    matchpos = 511 - (256 * a1 + (uint32_t)v);
+                    matchpos = 511 - (256 * a1 + v);
                 } else {
                     if (get_bit(&bs)) { // a3 == 1
-                        matchpos = 1023 - (256 * a1 + (uint32_t)v);
+                        matchpos = 1023 - (256 * a1 + v);
                     } else {
                         uint32_t a4 = get_bit(&bs) ? 1 : 0;
                         if (get_bit(&bs)) { // a5 == 1
-                            matchpos = 2047 - (512 * a1 + 256 * a4 + (uint32_t)v);
+                            matchpos = 2047 - (512 * a1 + 256 * a4 + v);
                         } else {
                             uint32_t a6 = get_bit(&bs) ? 1 : 0;
                             if (get_bit(&bs)) { // a7 == 1
-                                matchpos = 4095 - (1024 * a1 + 512 * a4 + 256 * a6 + (uint32_t)v);
+                                matchpos = 4095 - (1024 * a1 + 512 * a4 + 256 * a6 + v);
                             } else {
                                 uint32_t a8 = get_bit(&bs) ? 1 : 0;
-                                matchpos = 8191 - (2048 * a1 + 1024 * a4 + 512 * a6 + 256 * a8 + (uint32_t)v);
+                                matchpos = 8191 - (2048 * a1 + 1024 * a4 + 512 * a6 + 256 * a8 + v);
                             }
                         }
                     }

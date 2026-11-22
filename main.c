@@ -41,42 +41,44 @@ int main(int argc, char *argv[])
         goto exit;
     }
 
-    if (st.st_size > UNDIET_MAX_PACKED_FILESIZE) {
+    if (st.st_size < 0 || st.st_size > UNDIET_MAX_PACKED_FILESIZE) {
         fprintf(stderr, "Input file too big: %ld bytes. Max allowed is %u bytes (1MB).\n", (long)st.st_size, UNDIET_MAX_PACKED_FILESIZE);
         ret = EXIT_FAILURE;
         goto exit;
     }
 
-    in = malloc(st.st_size);
+    uint32_t file_size = (uint32_t)st.st_size;
+
+    in = malloc(file_size);
     if (in == NULL) {
-        fprintf(stderr, "Memory allocation for input buffer failed (%ld bytes): %s\n", (long)st.st_size, strerror(errno));
+        fprintf(stderr, "Memory allocation for input buffer failed (%u bytes): %s\n", file_size, strerror(errno));
         ret = EXIT_FAILURE;
         goto exit;
     }
 
-    cnt = read(fd_in, in, st.st_size);
-    if (cnt != st.st_size) {
-        fprintf(stderr, "Error reading from input file '%s'. Expected %ld bytes, got %zd. Error: %s\n", argv[1], (long)st.st_size, cnt, strerror(errno));
+    cnt = read(fd_in, in, file_size);
+    if (cnt != (ssize_t)file_size) {
+        fprintf(stderr, "Error reading from input file '%s'. Expected %u bytes, got %zd. Error: %s\n", argv[1], file_size, cnt, strerror(errno));
         ret = EXIT_FAILURE;
         goto exit;
     }
 
-    if (undiet_isvalid(in, st.st_size) == false) {
+    if (undiet_isvalid(in, file_size) == false) {
         fprintf(stderr, "Invalid input: File '%s' is not compressed with the DIET algorithm or header is invalid.\n", argv[1]);
         ret = EXIT_FAILURE;
         goto exit;
     }
 
-    uint32_t in_size = undiet_get_compressed_size(in, st.st_size);
-    if (in_size + UNDIET_HEADER_SIZE != st.st_size) {
-        fprintf(stderr, "Format error: Internal compressed size (%u) + header size (%d) does not match file size (%ld).\n", 
-                in_size, UNDIET_HEADER_SIZE, (long)st.st_size);
+    uint32_t in_size = undiet_get_compressed_size(in, file_size);
+    if (in_size + UNDIET_HEADER_SIZE != file_size) {
+        fprintf(stderr, "Format error: Internal compressed size (%u) + header size (%d) does not match file size (%u).\n", 
+                in_size, UNDIET_HEADER_SIZE, file_size);
         ret = EXIT_FAILURE;
         goto exit;
     }
 
-    uint16_t expected_crc = undiet_get_crc(in, (uint32_t)st.st_size);
-    uint16_t calculated_crc = undiet_calc_crc16(in, st.st_size);
+    uint16_t expected_crc = undiet_get_crc(in, file_size);
+    uint16_t calculated_crc = undiet_calc_crc16(in, file_size);
     if (calculated_crc != expected_crc) {
         fprintf(stderr, "Integrity error: CRC mismatch in compressed data! (Expected: 0x%04X, Calculated: 0x%04X)\n", 
                 expected_crc, calculated_crc);
@@ -84,7 +86,7 @@ int main(int argc, char *argv[])
         goto exit;
     }
 
-    uint32_t out_size = undiet_get_uncompressed_size(in, st.st_size);
+    uint32_t out_size = undiet_get_uncompressed_size(in, file_size);
     if ((out_size == 0)||(out_size > UNDIET_MAX_UNPACKED_FILESIZE)) {
         fprintf(stderr, "Decompression error: Illegal output size specified in header: %u bytes (Limit: %u bytes).\n", 
                 out_size, UNDIET_MAX_UNPACKED_FILESIZE);
@@ -100,7 +102,7 @@ int main(int argc, char *argv[])
     }
 
     memset(out, 0x00, out_size);
-    int32_t decompressed_size = undiet_unpack_ex(in, (uint32_t)st.st_size, out, out_size);
+    int32_t decompressed_size = undiet_unpack_ex(in, file_size, out, out_size);
     if (decompressed_size != (int32_t)out_size) {
         fprintf(stderr, "Decompression failure: Expected to unpack %u bytes, but got %d bytes.\n", out_size, decompressed_size);
         ret = EXIT_FAILURE;
