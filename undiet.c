@@ -41,14 +41,19 @@ static const uint16_t crc16_table[256] = {
 
 typedef struct {
     const uint8_t *src;
+    uint32_t src_size;
     uint32_t offset;
     uint16_t buffer;
     uint8_t bits_left;
     uint32_t dst_idx;
+    bool error;
 } BitStream;
 
 static inline void bitstream_refill(BitStream *bs) {
     if (bs->bits_left == 0) {
+        if (bs->offset + 2 > bs->src_size) {
+            return;
+        }
         // Read next 16-bit word (LSB first)
         bs->buffer = (uint16_t)bs->src[bs->offset] | ((uint16_t)bs->src[bs->offset + 1] << 8);
         bs->offset += 2;
@@ -59,6 +64,10 @@ static inline void bitstream_refill(BitStream *bs) {
 static inline bool get_bit(BitStream *bs) {
     if (bs->bits_left == 0) {
         bitstream_refill(bs);
+        if (bs->bits_left == 0) {
+            bs->error = true;
+            return false;
+        }
     }
     bool bit = bs->buffer & 1;
     bs->buffer >>= 1;
@@ -72,18 +81,24 @@ static inline bool get_bit(BitStream *bs) {
 int32_t undiet_unpack(const uint8_t src[], uint8_t dst[]) {
     if (!src || !dst) return 0;
 
+    uint32_t packed_size = undiet_get_compressed_size(src, UNDIET_HEADER_SIZE + 1);
     BitStream bs = {
         .src = src + UNDIET_HEADER_SIZE,
+        .src_size = packed_size,
         .offset = 0,
         .buffer = 0,
         .bits_left = 0,
-        .dst_idx = 0
+        .dst_idx = 0,
+        .error = false
     };
 
     bitstream_refill(&bs);
+    if (bs.bits_left == 0) return -1;
 
     while (1) {
-        if (get_bit(&bs)) { // x1
+        bool is_lit = get_bit(&bs);
+        if (bs.error) return -1;
+        if (is_lit) { // x1
             // Literal
             dst[bs.dst_idx++] = bs.src[bs.offset++];
         } else {
@@ -104,7 +119,9 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[]) {
                     matchlen = 2;
                     matchpos = 255 - (uint32_t)v;
                 } else { // v == 0xff: special code
-                    if (!get_bit(&bs)) { // a2 == 0: STOP
+                    bool a2 = get_bit(&bs);
+                    if (bs.error) return -1;
+                    if (!a2) { // a2 == 0: STOP
                         return (int32_t)bs.dst_idx;
                     }
                     // a2 == 1: segment refresh (ignoring for now as it's for EXE)
@@ -161,6 +178,10 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[]) {
                         break;
                     }
                 }
+            }
+
+            if (bs.error) {
+                return -1;
             }
 
             // Copy match
