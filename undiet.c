@@ -78,13 +78,12 @@ static inline bool get_bit(BitStream *bs) {
     return bit;
 }
 
-int32_t undiet_unpack(const uint8_t src[], uint8_t dst[]) {
-    if (!src || !dst) return 0;
+int32_t undiet_unpack_ex(const uint8_t src[], uint32_t src_size, uint8_t dst[], uint32_t dst_size) {
+    if (!src || !dst || src_size <= UNDIET_HEADER_SIZE || dst_size == 0) return -1;
 
-    uint32_t packed_size = undiet_get_compressed_size(src, UNDIET_HEADER_SIZE + 1);
     BitStream bs = {
         .src = src + UNDIET_HEADER_SIZE,
-        .src_size = packed_size,
+        .src_size = src_size - UNDIET_HEADER_SIZE,
         .offset = 0,
         .buffer = 0,
         .bits_left = 0,
@@ -100,10 +99,12 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[]) {
         if (bs.error) return -1;
         if (is_lit) { // x1
             // Literal
+            if (bs.offset >= bs.src_size || bs.dst_idx >= dst_size) return -1;
             dst[bs.dst_idx++] = bs.src[bs.offset++];
         } else {
             // Match
             bool x2 = get_bit(&bs);
+            if (bs.error || bs.offset >= bs.src_size) return -1;
             uint8_t v = bs.src[bs.offset++]; // dist_lo (v in deark)
             uint32_t matchpos = 0;
             uint32_t matchlen = 0;
@@ -173,6 +174,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[]) {
                             uint32_t x5 = get_bit(&bs) ? 1 : 0;
                             matchlen = 9 + 4 * x3 + 2 * x4 + x5;
                         } else { // 17-272
+                            if (bs.offset >= bs.src_size) return -1;
                             matchlen = 17 + (uint32_t)bs.src[bs.offset++];
                         }
                         break;
@@ -186,7 +188,7 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[]) {
 
             // Copy match
             uint32_t match_dist = matchpos + 1;
-            if (match_dist > bs.dst_idx) {
+            if (match_dist > bs.dst_idx || matchlen > dst_size - bs.dst_idx) {
                 return -1;
             }
             
@@ -201,6 +203,13 @@ int32_t undiet_unpack(const uint8_t src[], uint8_t dst[]) {
             }
         }
     }
+}
+
+int32_t undiet_unpack(const uint8_t src[], uint8_t dst[]) {
+    if (!src || !dst) return 0;
+    uint32_t packed_size = undiet_get_compressed_size(src, UNDIET_HEADER_SIZE + 1);
+    uint32_t unpacked_size = undiet_get_uncompressed_size(src, UNDIET_HEADER_SIZE + 1);
+    return undiet_unpack_ex(src, UNDIET_HEADER_SIZE + packed_size, dst, unpacked_size);
 }
 
 bool undiet_isvalid(const uint8_t src[], uint32_t size) {

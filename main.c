@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
         goto exit;
     }
 
-    uint16_t expected_crc = undiet_get_crc(in, in_size);
+    uint16_t expected_crc = undiet_get_crc(in, (uint32_t)st.st_size);
     uint16_t calculated_crc = undiet_calc_crc16(in, st.st_size);
     if (calculated_crc != expected_crc) {
         fprintf(stderr, "Integrity error: CRC mismatch in compressed data! (Expected: 0x%04X, Calculated: 0x%04X)\n", 
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     }
 
     memset(out, 0x00, out_size);
-    int32_t decompressed_size = undiet_unpack(in, out);
+    int32_t decompressed_size = undiet_unpack_ex(in, (uint32_t)st.st_size, out, out_size);
     if (decompressed_size != (int32_t)out_size) {
         fprintf(stderr, "Decompression failure: Expected to unpack %u bytes, but got %d bytes.\n", out_size, decompressed_size);
         ret = EXIT_FAILURE;

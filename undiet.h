@@ -9,6 +9,7 @@ static const uint32_t UNDIET_MAX_PACKED_FILESIZE   =  0xfffff;
 static const uint32_t UNDIET_MAX_UNPACKED_FILESIZE = 0x3fffff;
 
 int32_t undiet_unpack(const uint8_t src[], uint8_t dst[]);
+int32_t undiet_unpack_ex(const uint8_t src[], uint32_t src_size, uint8_t dst[], uint32_t dst_size);
 bool undiet_isvalid(const uint8_t src[], uint32_t size);
 uint32_t undiet_get_uncompressed_size(const uint8_t src[], uint32_t size);
 uint32_t undiet_get_compressed_size(const uint8_t src[], uint32_t size);
