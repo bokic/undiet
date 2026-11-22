@@ -28,3 +28,10 @@ install(TARGETS
     libundiet
     undiet
 )
+
+enable_testing()
+add_executable(test_undiet tests/test_undiet.c)
+target_include_directories(test_undiet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(test_undiet libundiet)
+add_test(NAME test_undiet COMMAND test_undiet)
+set_tests_properties(test_undiet PROPERTIES ENVIRONMENT "LD_LIBRARY_PATH=$<TARGET_FILE_DIR:libundiet>")
